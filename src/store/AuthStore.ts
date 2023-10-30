@@ -1,9 +1,8 @@
-
-import { ref, provide, inject, computed } from "vue";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { ref, computed } from 'vue'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { createContext } from '.'
 
 const state = ref({
-
   isLogin: computed(() => {
     const [t] = useLocalStorage('token')
     return Boolean(t)
@@ -17,11 +16,10 @@ const state = ref({
   projectList: [],
   errMsg: '',
   retryResolvedPromise: {},
-  toolbarTitle: '',
-});
+  toolbarTitle: ''
+})
 
-export const authStoreContext = {
+const [provideAuthStore, injectAuthStore] = createContext({
   state
-};
-export const provideAuthStore = () => provide("AuthStore", authStoreContext);
-export const injectAuthStore = () => inject<typeof authStoreContext>("AuthStore");
+})
+export { provideAuthStore, injectAuthStore }

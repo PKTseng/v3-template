@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { createContext } from '@/utils/helpers'
+import { createContext } from '@/utils'
 
 const state = reactive({
   message: '預設的內容',

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { createContext } from '@/utils/helpers'
+import { createContext } from '@/utils'
 
 const state = ref({
   isLogin: computed(() => {

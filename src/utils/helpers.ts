@@ -1,6 +1,5 @@
 // import Vue from 'vue'
 // import { VSnackbar, VIcon } from 'vuetify/lib'
-import { provide, inject } from 'vue'
 
 export function leadingSlash(str: string) {
   return str.startsWith('/') ? str : '/' + str
@@ -24,11 +23,6 @@ export const parseJwt = (token: string) => {
       .join('')
   )
   return JSON.parse(jsonPayload)
-}
-
-export const createContext = <T>(ctx: T) => {
-  const storeKey = crypto.randomUUID()
-  return [() => provide(storeKey, ctx), () => inject<T>(storeKey)] as const
 }
 
 class Alert {

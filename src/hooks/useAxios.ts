@@ -1,16 +1,11 @@
-import axios, { AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
+import axios from 'axios';
+import type { AxiosRequestConfig } from 'axios';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-// import { useLocalStorage } from './useLocalStorage';
-// import AlertDialog, { AlertType } from '@/components/AlertDialog';
-
 import { injectGlobalStore } from '@/store/GlobalStore';
-import { refreshToken } from '@/api/apiAuth';
-import { injectAuthStore } from '@/store/AuthStore';
-// import { injectAuthStore } from '@/store/AuthStore';
+import { useAuth } from './auth/useAuth';
+const BASE_URL = import.meta.env.BASE_API_URL;
 
-const BASE_URL = process.env.VUE_APP_BASE_API_URL;
-
-export const createAxiosIns = (config?: CreateAxiosDefaults) => {
+export const createAxiosIns = (config?: AxiosRequestConfig) => {
   let controller = new AbortController();
   const axiosIns = axios.create({
     baseURL: BASE_URL,
@@ -26,142 +21,98 @@ export const createAxiosIns = (config?: CreateAxiosDefaults) => {
   return { abortRequest, axiosIns };
 };
 
-export const useAxios = (axiosDefaultConfig: AxiosRequestConfig = {}) => {
+export const useAxios = <TReq = unknown, TRes = unknown>(getAxiosConfigFn: (arg: TReq) => AxiosRequestConfig<unknown>, axiosRequestConfigDefault?: AxiosRequestConfig<unknown>) => {
   const { setIsLoading } = injectGlobalStore()!;
-  const { logout } = injectAuthStore()!;
-  const [token, setToken] = useLocalStorage('token');
-
+  const [token] = useLocalStorage<string>('token');
+  const { retry } = useAuth();
   const { abortRequest, axiosIns } = createAxiosIns({
-    ...axiosDefaultConfig,
+    ...axiosRequestConfigDefault,
     headers: {
-      ...axiosDefaultConfig.headers,
-      Authorization: token ? `Bearer ${token.replace(/^Bearer /, '')}` : undefined,
+      ...axiosRequestConfigDefault?.headers,
+      Authorization: token.value !== undefined ? `Bearer ${token.value.replace(/^Bearer /, '')}` : '',
     },
-  });
+  })
 
-  const _reTryRequest = async (config: AxiosRequestConfig) => {
-    try {
-      const { data: accessToken } = await refreshToken(undefined as any);
+  const request = async (variables: TReq): Promise<TRes> => {
 
-      setToken(accessToken);
-      const { data } = await axiosIns.request({
-        ...config,
-        headers: {
-          ...config.headers,
-          Authorization: `Bearer ${accessToken.replace(/^Bearer /, '')}`,
-        },
-      });
-      return data;
-    } catch {
-      logout();
-    }
-  };
-
-  const request = async (axiosRequestConfig?: AxiosRequestConfig) => {
+    const axiosConfig = getAxiosConfigFn(variables)
     try {
       setIsLoading(true);
-      const { data } = await axiosIns.request({
-        ...axiosDefaultConfig,
-        ...axiosRequestConfig,
-      });
-      if (data && typeof data === 'object' && 'errorCode' in data) {
-        throw new Error(data?.errorMsg);
-      }
+      const { data } = await axiosIns.request<TRes>(axiosConfig);
       return data;
     } catch (e: any) {
       if (e.response?.status === 401) {
-        return await _reTryRequest({
-          ...axiosDefaultConfig,
-          ...axiosRequestConfig,
-        });
+        const { data } = await retry<TRes>(axiosConfig)
+        return data;
       }
-      throw e;
+      throw (new Error('un catch error'))
     } finally {
       setIsLoading(false);
     }
   };
 
-  const requestWithoutLoadingEffect = async (axiosRequestConfig: AxiosRequestConfig) => {
+  const requestWithoutLoadingEffect = async (variables: TReq): Promise<TRes> => {
+    const axiosConfig = getAxiosConfigFn(variables)
     try {
-      const { data } = await axiosIns.request({
-        ...axiosDefaultConfig,
-        ...axiosRequestConfig,
-      });
-      if (data && typeof data === 'object' && 'errorCode' in data) {
-        throw new Error(data?.errorMsg);
-      }
+      const { data } = await axiosIns.request<TRes>(axiosConfig);
       return data;
     } catch (e: any) {
       if (e.response?.status === 401) {
-        return await _reTryRequest({
-          ...axiosDefaultConfig,
-          ...axiosRequestConfig,
-        });
+        const { data } = await retry<TRes>(axiosConfig)
+        return data;
       }
-      throw e;
+      throw (new Error('un catch error'))
     }
-  };
-
-  const requestWithoutAuth = async (axiosRequestConfig: AxiosRequestConfig) => {
-    const { data } = await axiosIns.request({
-      ...axiosDefaultConfig,
-      ...axiosRequestConfig,
-    });
-    if (data && typeof data === 'object' && 'errorCode' in data) {
-      throw new Error(data?.errorMsg);
-    }
-    return data;
   };
 
   /*
-  const {  } = useGlobalStore();
-
-  const requestWithDialog = async (axiosRequestConfig: AxiosRequestConfig, opts = {}) => {
-
-    const {
-      successDialog,
-      errorDialog,
-      successMsg,
-      errorMsg,
-    } = opts || {};
-    try {
-      const data = await request(axiosRequestConfig);
-      if (successDialog !== undefined) {
-        openDialog(successDialog);
-      } else {
-        openDialog(
-          <AlertDialog
-            type={ AlertType.success }
-            handleClose = { closeDialog }
-          >
-          { successMsg || '請求成功'}
-      </AlertDialog>
-        );
-      }
-return data;
-    } catch (e) {
-  if (errorDialog !== undefined) {
-    openDialog(errorDialog);
-  } else {
-    openDialog(
-      <AlertDialog
-            type={ AlertType.error }
-            handleClose = { closeDialog }
-      >
-      { errorMsg || '發生錯誤'}
-  </AlertDialog>
-        );
-}
-throw e;
+    const {  } = useGlobalStore();
+     
+    const requestWithDialog = async (axiosRequestConfig: AxiosRequestConfig, opts = {}) => {
+     
+      const {
+        successDialog,
+        errorDialog,
+        successMsg,
+        errorMsg,
+      } = opts || {};
+      try {
+        const data = await request(axiosRequestConfig);
+        if (successDialog !== undefined) {
+          openDialog(successDialog);
+        } else {
+          openDialog(
+            <AlertDialog
+              type={ AlertType.success }
+              handleClose = { closeDialog }
+            >
+            { successMsg || '請求成功'}
+        </AlertDialog>
+          );
+        }
+    return data;
+      } catch (e) {
+    if (errorDialog !== undefined) {
+      openDialog(errorDialog);
+    } else {
+      openDialog(
+        <AlertDialog
+              type={ AlertType.error }
+              handleClose = { closeDialog }
+        >
+        { errorMsg || '發生錯誤'}
+    </AlertDialog>
+          );
     }
-   
-}; */
+    throw e;
+      }
+     
+    }; */
 
   return {
     request,
     /* requestWithDialog, */
     requestWithoutLoadingEffect,
-    requestWithoutAuth,
     abortRequest,
   };
 };

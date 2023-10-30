@@ -1,5 +1,6 @@
 // import Vue from 'vue'
 // import { VSnackbar, VIcon } from 'vuetify/lib'
+import { provide, inject } from 'vue'
 
 export function leadingSlash(str: string) {
   return str.startsWith('/') ? str : '/' + str
@@ -10,14 +11,24 @@ export function trailingSlash(str: string) {
 }
 
 export const wait = (timeout: number) => {
-  return new Promise(resolve => setTimeout(resolve, timeout))
+  return new Promise((resolve) => setTimeout(resolve, timeout))
 }
 
 export const parseJwt = (token: string) => {
   const base64Url = token.split('.')[1]
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-  const jsonPayload = decodeURIComponent(atob(base64).split('').map(cipher => '%' + ('00' + cipher.charCodeAt(0).toString(16)).slice(-2)).join(''))
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map((cipher) => '%' + ('00' + cipher.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  )
   return JSON.parse(jsonPayload)
+}
+
+export const createContext = <T>(ctx: T) => {
+  const storeKey = crypto.randomUUID()
+  return [() => provide(storeKey, ctx), () => inject<T>(storeKey)] as const
 }
 
 class Alert {

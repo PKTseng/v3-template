@@ -1,33 +1,9 @@
-import { ref } from 'vue';
+import { ref, watchEffect, watch } from 'vue';
 
-const useLocalStorageWithDefault = <T = string>(keyName: string, defaultValue: T) => {
-  const storedValue = ref(getStoredValue(keyName, defaultValue));
+const useLocalStorageWithDefault = <T = unknown>(keyName: string, defaultValue: T) => {
+  const storedValue = ref<T>();
 
   const setValue = (newValue: T) => {
-    try {
-      window.localStorage.setItem(keyName, JSON.stringify(newValue));
-      storedValue.value = newValue;
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const remove = () => {
-    try {
-      window.localStorage.removeItem(keyName);
-      storedValue.value = defaultValue;
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  return [storedValue, setValue, remove] as const;
-};
-
-const useLocalStorage = (keyName: string) => {
-  const storedValue = ref(getStoredValue(keyName));
-
-  const setValue = (newValue: string) => {
     try {
       window.localStorage.setItem(keyName, JSON.stringify(newValue));
       storedValue.value = newValue;
@@ -45,19 +21,48 @@ const useLocalStorage = (keyName: string) => {
     }
   };
 
-  return [storedValue, setValue, remove];
+  // once 
+  watch([defaultValue], () => {
+    setValue(defaultValue)
+  }, {
+    immediate: true
+  })
+
+  return [storedValue, setValue, remove] as const;
 };
 
-function getStoredValue<T>(keyName: string, defaultValue?: T) {
-  try {
-    const value = window.localStorage.getItem(keyName);
-    if (value) {
-      return JSON.parse(value);
+const useLocalStorage = <T = unknown>(keyName: string) => {
+
+  const storedValue = ref<T>();
+
+  watchEffect(() => {
+    const existValue = localStorage.getItem(keyName);
+    if (existValue) {
+      storedValue.value = JSON.parse(existValue);
+    } else {
+      storedValue.value = undefined
     }
-    return defaultValue;
-  } catch (err) {
-    return defaultValue;
-  }
-}
+  })
+
+  const setValue = (newValue: T) => {
+    try {
+      window.localStorage.setItem(keyName, JSON.stringify(newValue));
+      storedValue.value = newValue;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const remove = () => {
+    try {
+      window.localStorage.removeItem(keyName);
+      storedValue.value = undefined;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return [storedValue, setValue, remove] as const;
+};
 
 export { useLocalStorageWithDefault, useLocalStorage };

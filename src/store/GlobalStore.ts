@@ -18,7 +18,7 @@ const state = reactive(
 
 export const globalStoreContext = {
   state,
-  setIsLoading: (bool: boolean) => state.isPageLoading = bool
+  setIsLoading: (bool?: boolean) => state.isPageLoading = bool === undefined ? !state.isPageLoading : bool
 };
 export const provideGlobalStore = () => provide("globalStore", globalStoreContext);
 export const injectGlobalStore = () => inject<typeof globalStoreContext>("globalStore");

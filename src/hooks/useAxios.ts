@@ -1,117 +1,118 @@
-import axios, { AxiosRequestConfig, CreateAxiosDefaults } from 'axios';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import axios from 'axios'
+import type { AxiosRequestConfig, CreateAxiosDefaults } from 'axios'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 // import { useLocalStorage } from './useLocalStorage';
 // import AlertDialog, { AlertType } from '@/components/AlertDialog';
 
-import { injectGlobalStore } from '@/store/GlobalStore';
-import { refreshToken } from '@/api/apiAuth';
-import { injectAuthStore } from '@/store/AuthStore';
+import { injectGlobalStore } from '@/store/GlobalStore'
+import { refreshToken } from './useAuth'
+import { injectAuthStore } from '@/store/AuthStore'
 // import { injectAuthStore } from '@/store/AuthStore';
 
-const BASE_URL = process.env.VUE_APP_BASE_API_URL;
+const BASE_URL = process.env.VUE_APP_BASE_API_URL
 
 export const createAxiosIns = (config?: CreateAxiosDefaults) => {
-  let controller = new AbortController();
+  let controller = new AbortController()
   const axiosIns = axios.create({
     baseURL: BASE_URL,
     ...config,
     withCredentials: true,
-    signal: controller.signal,
-  });
+    signal: controller.signal
+  })
   const abortRequest = () => {
-    controller.abort();
-    controller = new AbortController();
-    axiosIns.defaults.signal = controller.signal;
-  };
-  return { abortRequest, axiosIns };
-};
+    controller.abort()
+    controller = new AbortController()
+    axiosIns.defaults.signal = controller.signal
+  }
+  return { abortRequest, axiosIns }
+}
 
 export const useAxios = (axiosDefaultConfig: AxiosRequestConfig = {}) => {
-  const { setIsLoading } = injectGlobalStore()!;
-  const { logout } = injectAuthStore()!;
-  const [token, setToken] = useLocalStorage('token');
+  const { setIsLoading } = injectGlobalStore()!
+  const { logout } = injectAuthStore()!
+  const [token, setToken] = useLocalStorage('token')
 
   const { abortRequest, axiosIns } = createAxiosIns({
     ...axiosDefaultConfig,
     headers: {
       ...axiosDefaultConfig.headers,
-      Authorization: token ? `Bearer ${token.replace(/^Bearer /, '')}` : undefined,
-    },
-  });
+      Authorization: token ? `Bearer ${token.replace(/^Bearer /, '')}` : undefined
+    }
+  })
 
   const _reTryRequest = async (config: AxiosRequestConfig) => {
     try {
-      const { data: accessToken } = await refreshToken(undefined as any);
+      const { data: accessToken } = await refreshToken(undefined as any)
 
-      setToken(accessToken);
+      setToken(accessToken)
       const { data } = await axiosIns.request({
         ...config,
         headers: {
           ...config.headers,
-          Authorization: `Bearer ${accessToken.replace(/^Bearer /, '')}`,
-        },
-      });
-      return data;
+          Authorization: `Bearer ${accessToken.replace(/^Bearer /, '')}`
+        }
+      })
+      return data
     } catch {
-      logout();
+      logout()
     }
-  };
+  }
 
   const request = async (axiosRequestConfig?: AxiosRequestConfig) => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       const { data } = await axiosIns.request({
         ...axiosDefaultConfig,
-        ...axiosRequestConfig,
-      });
+        ...axiosRequestConfig
+      })
       if (data && typeof data === 'object' && 'errorCode' in data) {
-        throw new Error(data?.errorMsg);
+        throw new Error(data?.errorMsg)
       }
-      return data;
+      return data
     } catch (e: any) {
       if (e.response?.status === 401) {
         return await _reTryRequest({
           ...axiosDefaultConfig,
-          ...axiosRequestConfig,
-        });
+          ...axiosRequestConfig
+        })
       }
-      throw e;
+      throw e
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const requestWithoutLoadingEffect = async (axiosRequestConfig: AxiosRequestConfig) => {
     try {
       const { data } = await axiosIns.request({
         ...axiosDefaultConfig,
-        ...axiosRequestConfig,
-      });
+        ...axiosRequestConfig
+      })
       if (data && typeof data === 'object' && 'errorCode' in data) {
-        throw new Error(data?.errorMsg);
+        throw new Error(data?.errorMsg)
       }
-      return data;
+      return data
     } catch (e: any) {
       if (e.response?.status === 401) {
         return await _reTryRequest({
           ...axiosDefaultConfig,
-          ...axiosRequestConfig,
-        });
+          ...axiosRequestConfig
+        })
       }
-      throw e;
+      throw e
     }
-  };
+  }
 
   const requestWithoutAuth = async (axiosRequestConfig: AxiosRequestConfig) => {
     const { data } = await axiosIns.request({
       ...axiosDefaultConfig,
-      ...axiosRequestConfig,
-    });
+      ...axiosRequestConfig
+    })
     if (data && typeof data === 'object' && 'errorCode' in data) {
-      throw new Error(data?.errorMsg);
+      throw new Error(data?.errorMsg)
     }
-    return data;
-  };
+    return data
+  }
 
   /*
   const {  } = useGlobalStore();
@@ -162,8 +163,8 @@ throw e;
     /* requestWithDialog, */
     requestWithoutLoadingEffect,
     requestWithoutAuth,
-    abortRequest,
-  };
-};
+    abortRequest
+  }
+}
 
-export default useAxios;
+export default useAxios

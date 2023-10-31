@@ -22,8 +22,8 @@ export default defineComponent({
       default: () => []
     }
   },
-  methods: {
-    renderChildrenVNode(items?: MenuItem[]) {
+  setup(props, { slots, attrs }) {
+    const renderChildrenVNode = (items?: MenuItem[]) => {
       if (!items) return null
 
       return items.map((item, idx) => {
@@ -37,26 +37,25 @@ export default defineComponent({
                     <v-list-item-title>{item.title}</v-list-item-title>
                   </>
                 ),
-                default: () => this.renderChildrenVNode(item.children)
+                default: () => renderChildrenVNode(item.children)
               }}
             </v-list-group>
           )
         }
-        return <drawer-list-item key={idx} item={item} />
+        return <DrawerListItem key={idx} item={item} />
       })
     }
-  },
-  render() {
-    return (
-      <v-list expand nav v-slots={{ ...this.$slots, ...this.$attrs }}>
-        {this.renderChildrenVNode(this.items)}
+
+    return () => (
+      <v-list expand nav v-slots={{ ...slots, ...attrs }}>
+        {renderChildrenVNode(props.items)}
       </v-list>
     )
   }
 })
 </script>
 
-<style lang="scss" scoped>
+<!-- <style lang="scss" scoped>
 ::v-deep {
   &.v-list {
     padding: 0;
@@ -83,4 +82,4 @@ export default defineComponent({
     }
   }
 }
-</style>
+</style> -->

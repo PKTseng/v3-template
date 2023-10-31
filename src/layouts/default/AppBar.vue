@@ -15,8 +15,8 @@
       />
     </template>
 
-    <!-- <AppBarToggle class="hidden-sm-and-down" /> -->
-    <v-spacer></v-spacer>
+    <AppBarToggle class="hidden-sm-and-down" />
+    <!-- <v-spacer></v-spacer> -->
     <v-toolbar-title class="font-weight-bold text-h4 pl-2">
       {{ title }}
     </v-toolbar-title>
@@ -28,6 +28,7 @@
 </template>
 <script setup lang="ts">
 import DefaultAccount from './AppBarAccount.vue'
+import AppBarToggle from './AppBarToggle.vue'
 import { ref } from 'vue'
 
 const title = ref('APIM')

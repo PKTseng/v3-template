@@ -11,13 +11,13 @@
     <v-overlay :value="isPageLoading" z-index="999">
       <v-progress-circular :size="50" color="primary" indeterminate></v-progress-circular>
     </v-overlay>
-
+    <!-- 頂欄 -->
     <default-bar />
-
+    <!-- 側欄 -->
     <default-drawer />
-
+    <!-- 主要頁面 -->
     <default-view />
-
+    <!-- 頁腳 -->
     <default-footer />
   </v-layout>
 </template>

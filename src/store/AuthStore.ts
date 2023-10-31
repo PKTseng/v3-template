@@ -1,27 +1,31 @@
-
-import { ref, provide, inject, computed } from "vue";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { ref, computed } from 'vue'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { createContext } from '@/utils'
+import { persistentRef } from '@/hooks/useLocalforage'
 
 const state = ref({
+  defaultPath: '',
+  errMsg: '',
+  toolbarTitle: ''
+})
 
+const persistentState = persistentRef(
+  {
+    userId: '',
+    email: '',
+    groupId: '',
+    isGroupAdmin: false,
+    projectList: []
+  },
+  { key: 'auth' }
+)
+
+const [provideAuthStore, injectAuthStore] = createContext({
+  state,
+  persistentState,
   isLogin: computed(() => {
     const [t] = useLocalStorage('token')
     return Boolean(t)
-  }),
-
-  userId: '',
-  email: '',
-  groupId: '',
-  isGroupAdmin: false,
-  defaultPath: '',
-  projectList: [],
-  errMsg: '',
-  retryResolvedPromise: {},
-  toolbarTitle: '',
-});
-
-export const authStoreContext = {
-  state
-};
-export const provideAuthStore = () => provide("AuthStore", authStoreContext);
-export const injectAuthStore = () => inject<typeof authStoreContext>("AuthStore");
+  })
+})
+export { provideAuthStore, injectAuthStore }
